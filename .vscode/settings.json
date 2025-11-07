@@ -1,3 +1,9 @@
 {
-    "C_Cpp.default.compilerPath": "/usr/bin/g++"
+    "C_Cpp.default.compilerPath": "/usr/bin/g++",
+    "files.associations": {
+        "compare": "cpp",
+        "system_error": "cpp",
+        "text_encoding": "cpp",
+        "typeinfo": "cpp"
+    }
 }
