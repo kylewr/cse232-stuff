@@ -1,10 +1,5 @@
 {
-    "C_Cpp.default.compilerPath": "/usr/bin/g++",
     "files.associations": {
-        "compare": "cpp",
-        "system_error": "cpp",
-        "text_encoding": "cpp",
-        "typeinfo": "cpp",
         "array": "cpp",
         "atomic": "cpp",
         "bit": "cpp",
@@ -12,6 +7,7 @@
         "charconv": "cpp",
         "clocale": "cpp",
         "cmath": "cpp",
+        "compare": "cpp",
         "concepts": "cpp",
         "cstdarg": "cpp",
         "cstddef": "cpp",
@@ -22,7 +18,6 @@
         "cwchar": "cpp",
         "cwctype": "cpp",
         "deque": "cpp",
-        "map": "cpp",
         "string": "cpp",
         "unordered_map": "cpp",
         "vector": "cpp",
@@ -36,12 +31,12 @@
         "optional": "cpp",
         "random": "cpp",
         "string_view": "cpp",
+        "system_error": "cpp",
         "tuple": "cpp",
         "type_traits": "cpp",
         "utility": "cpp",
         "format": "cpp",
         "initializer_list": "cpp",
-        "iomanip": "cpp",
         "iosfwd": "cpp",
         "iostream": "cpp",
         "istream": "cpp",
@@ -50,10 +45,11 @@
         "numbers": "cpp",
         "ostream": "cpp",
         "span": "cpp",
-        "sstream": "cpp",
         "stdexcept": "cpp",
         "streambuf": "cpp",
+        "text_encoding": "cpp",
+        "typeinfo": "cpp",
         "variant": "cpp",
-        "set": "cpp"
+        "sstream": "cpp"
     }
 }

@@ -1,0 +1,100 @@
+User Portfolios (in alphabetical order):
+Dolson's Portfolio: 90 BTC, 7000 USD, 
+Enbody's Portfolio: 7000 USD, 
+Nahum's Portfolio: 400 ETH, 1000 USD, 
+Ofria's Portfolio: 9 BCH, 
+
+Before 1st add order
+After 1st add order
+Users Orders (in alphabetical order):
+Dolson's Open Orders (in chronological order):
+Dolson's Filled Orders (in chronological order):
+Enbody's Open Orders (in chronological order):
+Enbody's Filled Orders (in chronological order):
+Nahum's Open Orders (in chronological order):
+Buy 2 BTC at 22 USD by Nahum
+Nahum's Filled Orders (in chronological order):
+Ofria's Open Orders (in chronological order):
+Ofria's Filled Orders (in chronological order):
+
+Before 2nd add order
+After 2nd add order
+Trade History (in chronological order):
+Nahum Bought 2 of BTC From Dolson for 17 USD
+
+User Portfolios (in alphabetical order):
+Dolson's Portfolio: 87 BTC, 7034 USD, 
+Enbody's Portfolio: 7000 USD, 
+Nahum's Portfolio: 2 BTC, 400 ETH, 956 USD, 
+Ofria's Portfolio: 9 BCH, 
+
+Users Orders (in alphabetical order):
+Dolson's Open Orders (in chronological order):
+Sell 1 BTC at 17 USD by Dolson
+Dolson's Filled Orders (in chronological order):
+Sell 2 BTC at 17 USD by Dolson
+Enbody's Open Orders (in chronological order):
+Enbody's Filled Orders (in chronological order):
+Nahum's Open Orders (in chronological order):
+Nahum's Filled Orders (in chronological order):
+Buy 2 BTC at 17 USD by Nahum
+Ofria's Open Orders (in chronological order):
+Ofria's Filled Orders (in chronological order):
+
+Trade History (in chronological order):
+Nahum Bought 2 of BTC From Dolson for 17 USD
+Enbody Bought 15 of ETH From Nahum for 100 USD
+Dolson Bought 5 of ETH From Nahum for 100 USD
+Users Orders (in alphabetical order):
+Dolson's Open Orders (in chronological order):
+Sell 1 BTC at 17 USD by Dolson
+Buy 5 ETH at 200 USD by Dolson
+Dolson's Filled Orders (in chronological order):
+Sell 2 BTC at 17 USD by Dolson
+Buy 5 ETH at 100 USD by Dolson
+Enbody's Open Orders (in chronological order):
+Enbody's Filled Orders (in chronological order):
+Buy 15 ETH at 100 USD by Enbody
+Nahum's Open Orders (in chronological order):
+Nahum's Filled Orders (in chronological order):
+Buy 2 BTC at 17 USD by Nahum
+Sell 15 ETH at 100 USD by Nahum
+Sell 5 ETH at 100 USD by Nahum
+Ofria's Open Orders (in chronological order):
+Ofria's Filled Orders (in chronological order):
+Trade History (in chronological order):
+Nahum Bought 2 of BTC From Dolson for 17 USD
+Enbody Bought 15 of ETH From Nahum for 100 USD
+Dolson Bought 5 of ETH From Nahum for 100 USD
+User Portfolios (in alphabetical order):
+Dolson's Portfolio: 87 BTC, 3 ETH, 5034 USD, 
+Enbody's Portfolio: 15 ETH, 2490 USD, 
+Nahum's Portfolio: 2 BTC, 360 ETH, 2956 USD, 
+Ofria's Portfolio: 9 BCH, 
+
+
+Users Orders (in alphabetical order):
+Dolson's Open Orders (in chronological order):
+Sell 1 BTC at 17 USD by Dolson
+Buy 5 ETH at 200 USD by Dolson
+Sell 2 ETH at 250 USD by Dolson
+Dolson's Filled Orders (in chronological order):
+Sell 2 BTC at 17 USD by Dolson
+Buy 5 ETH at 100 USD by Dolson
+Enbody's Open Orders (in chronological order):
+Buy 1 BTC at 10 USD by Enbody
+Enbody's Filled Orders (in chronological order):
+Buy 15 ETH at 100 USD by Enbody
+Nahum's Open Orders (in chronological order):
+Sell 20 ETH at 1000 USD by Nahum
+Nahum's Filled Orders (in chronological order):
+Buy 2 BTC at 17 USD by Nahum
+Sell 15 ETH at 100 USD by Nahum
+Sell 5 ETH at 100 USD by Nahum
+Ofria's Open Orders (in chronological order):
+Ofria's Filled Orders (in chronological order):
+Asset Bid Ask Spread (in alphabetical order):
+BCH: Highest Open Buy = NA USD and Lowest Open Sell = 55 USD
+BTC: Highest Open Buy = 10 USD and Lowest Open Sell = 17 USD
+ETH: Highest Open Buy = 200 USD and Lowest Open Sell = 250 USD
+LTC: Highest Open Buy = 10 USD and Lowest Open Sell = NA USD

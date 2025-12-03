@@ -1,0 +1,7 @@
+vector.swap(vector) was an AI suggestion for swapping the new orders
+
+AI taught me what a set was
+
+for (const auto& [...]) was a solution to evaluating maps,tuples,etc
+
+AI helped me understand when orders were copied or when they were copied by ref

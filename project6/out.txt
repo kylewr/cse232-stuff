@@ -1,0 +1,8 @@
+STAGE: ONE
+Wall at: DOWN
+last player pos:
+{23,2}
+current player pos:
+{24,2}
+Chosen Move:
+RIGHT
