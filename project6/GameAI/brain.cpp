@@ -2,8 +2,12 @@
 
 #include <algorithm>
 #include <fstream>
+#include <map>
 #include <set>
+#include <thread>
 #include <vector>
+
+#define LOG_TO_FILE
 
 Brain::Brain() {}
 
@@ -20,15 +24,21 @@ int Brain::getNextMove(GameState& gamestate) {
     playerPos.first = gamestate.pos[1];
     playerPos.second = gamestate.pos[0];
 
+    clearFile();
     switch (gamestate.stage) {
         case 0:
+        case 2:
+        case 5:
             nextMove = runStageMaze();
             break;
         case 1:
             nextMove = runStageFood();
             break;
-        case 2:
-            nextMove = runStageMaze();
+        case 3:
+            nextMove = runStageFlags();
+            break;
+        case 4:
+            nextMove = runStageEnemies();
             break;
     }
 
@@ -106,17 +116,22 @@ std::string Brain::translate(int direction) {
 }
 
 void Brain::clearFile() {
+#ifdef LOG_TO_FILE
     std::ofstream ofs("out.txt", std::ios::trunc);
+#endif
 }
 
 void Brain::print(const char* msg) {
+#ifdef LOG_TO_FILE
     std::ofstream ofs("out.txt", std::ios::app);
     if (!ofs)
         return;
     ofs << msg << '\n';
+#endif
 }
 
 void Brain::printVision() {
+#ifdef LOG_TO_FILE
     if (gamestate_ == nullptr) {
         return;
     }
@@ -133,6 +148,7 @@ void Brain::printVision() {
         }
         ofs << '\n';
     }
+#endif
 }
 
 POS Brain::getPlayerInVision() {
@@ -344,22 +360,87 @@ std::vector<int> Brain::getCardinals(int r, char targ) {
     return outs;
 }
 
+std::vector<int> Brain::getCardinals(int r, const std::vector<char>& targ) {
+    std::vector<int> outs;
+
+    if (gamestate_ == nullptr) {
+        return outs;
+    }
+
+    VISION& v = gamestate_->vision;
+
+    int rows = static_cast<int>(v.size());
+    if (rows == 0) {
+        return outs;
+    }
+    int cols = static_cast<int>(v.at(0).size());
+
+    POS p = getPlayerInVision();
+    int pr = p.first;
+    int pc = p.second;
+
+    // UP
+    if (pr - r >= 0) {
+        char current = v.at(pr - r).at(pc);
+        for (char t : targ) {
+            if (current == t) {
+                outs.push_back(UP);
+                break;
+            }
+        }
+    }
+    // DOWN
+    if (pr + r < rows) {
+        char current = v.at(pr + r).at(pc);
+        for (char t : targ) {
+            if (current == t) {
+                outs.push_back(DOWN);
+                break;
+            }
+        }
+    }
+    // LEFT
+    if (pc - r >= 0) {
+        char current = v.at(pr).at(pc - r);
+        for (char t : targ) {
+            if (current == t) {
+                outs.push_back(LEFT);
+                break;
+            }
+        }
+    }
+
+    // RIGHT
+    if (pc + r < cols) {
+        char current = v.at(pr).at(pc + r);
+        for (char t : targ) {
+            if (current == t) {
+                outs.push_back(RIGHT);
+                break;
+            }
+        }
+    }
+    return outs;
+}
+
 int Brain::runStageMaze() {
     /*
     this is a wall hugger
     */
 
+    print("----------------");
+    print("STAGE: MAZE");
+
+    static const std::vector<char> WALL_TARGS {'+', 'D', 'T'};
+
     static int lastMove = RIGHT;
     int move = lastMove;
-
-    clearFile();
-    print("STAGE: MAZE");
 
     // print("Player Position:");
     // print(std::to_string(playerPos.first).c_str());
     // print(std::to_string(playerPos.second).c_str());
 
-    std::vector<int> walls = getCardinals(1, '+'); // r=1
+    std::vector<int> walls = getCardinals(1, WALL_TARGS); // r=1
     for (int w : walls) {
         print(("Wall at: " + translate(w)).c_str());
     }
@@ -383,8 +464,7 @@ int Brain::runStageMaze() {
 
         print("current player pos:");
 
-        print(("{" + std::to_string(playerPos.first) + "," + std::to_string(playerPos.second) +
-        "}")
+        print(("{" + std::to_string(playerPos.first) + "," + std::to_string(playerPos.second) + "}")
                   .c_str());
 
         if (playerPos == lastPlayerPos) {
@@ -421,7 +501,7 @@ int Brain::runStageMaze() {
 }
 
 int Brain::runStageFood() {
-    clearFile();
+    print("----------------");
     print("STAGE: FOOD");
 
     int move = 0;
@@ -441,17 +521,12 @@ int Brain::runStageFood() {
     remember the door if we see it
     */
     if (doorPos.first == -1 && doorPos.second == -1) {
-        std::vector<POS> doors = relToAbs(getRelativeAllInVision('D'));
-        if (!doors.empty()) {
-            POS door = doors.front();
-            if (door.first != -1 && door.second != -1) {
-                if (door.first != -1 && door.second != -1) {
-                    doorPos = door;
-                }
-            }
+        POS door = relToAbs(getSingleTargetInVision('D'));
+        if (door.first != -1 && door.second != -1) {
+            doorPos = door;
         }
     }
-    
+
     if (!foodMemory.empty()) {
         POS closest = getClosestTarget(foodMemory);
         move = moveTowards(closest);
@@ -487,34 +562,213 @@ int Brain::runStageFood() {
     }
 
     // Remove food from memory if we see empty space where we thought food was
-    for (POS emptySpace : relToAbs(getRelativeAllInVision(' '))) {
-        foodMemory.erase(emptySpace);
+    if (!foodMemory.empty()) {
+        for (POS emptySpace : relToAbs(getRelativeAllInVision(' '))) {
+            foodMemory.erase(emptySpace);
+        }
+        foodMemory.erase(playerPos); // Remove food at current position
     }
-    foodMemory.erase(playerPos); // Remove food at current position
 
     print("Chosen Move:");
     print(translate(move).c_str());
-    printVision();
+    // printVision();
 
     return move;
 }
 
 int Brain::runStageFlags() {
-    clearFile();
+    print("----------------");
     print("STAGE: FLAGS");
 
-    static int lastMove = RIGHT;
     int move = 0;
 
     static POS flagAPos {-1, -1};
     static POS flagBPos {-1, -1};
+    static POS doorPos {-1, -1};
+    static bool collectedA {false};
+    static bool collectedB {false};
 
+    /*
+    be on the lookout for flags and doors
+    */
     if (flagAPos.first == -1 && flagAPos.second == -1) {
         POS flagA = getSingleTargetInVision('A');
+        /*
+        RANT TIME!!!
+        okay so i have literally NO CLUE why but the x and y coordinates
+        are somehow flipped here and if i change the helper method to return
+        normal values everything else breaks!!!!
+        oopsies i love programming but its okay
+        */
+        int temp = flagA.first;
+        flagA.first = flagA.second;
+        flagA.second = temp;
         if (flagA.first != -1 && flagA.second != -1) {
-            flagAPos = relToAbs(std::vector<POS> {flagA}).front();
+            flagAPos = relToAbs(flagA);
+        }
+    }
+    if (flagBPos.first == -1 && flagBPos.second == -1) {
+        POS flagB = getSingleTargetInVision('B');
+        int temp = flagB.first;
+        flagB.first = flagB.second;
+        flagB.second = temp;
+        if (flagB.first != -1 && flagB.second != -1) {
+            flagBPos = relToAbs(flagB);
+        }
+    }
+    if (doorPos.first == -1 && doorPos.second == -1) {
+        POS door = getSingleTargetInVision('D');
+        int temp = door.first;
+        door.first = door.second;
+        door.second = temp;
+        if (door.first != -1 && door.second != -1) {
+            doorPos = relToAbs(door);
         }
     }
 
+    // print("last player pos:");
+    // print(("{" + std::to_string(lastPlayerPos.first) + "," + std::to_string(lastPlayerPos.second)
+    // +
+    //        "}")
+    //           .c_str());
+    // print("current player pos:");
+    // print(("{" + std::to_string(playerPos.first) + "," + std::to_string(playerPos.second) + "}")
+    //           .c_str());
+    // print("flag a:");
+    // print(("{" + std::to_string(flagAPos.first) + "," + std::to_string(flagAPos.second) + "}")
+    //           .c_str());
+    // print("flag b:");
+    // print(("{" + std::to_string(flagBPos.first) + "," + std::to_string(flagBPos.second) + "}")
+    //           .c_str());
+    // print("door:");
+    // print(
+    //     ("{" + std::to_string(doorPos.first) + "," + std::to_string(doorPos.second) +
+    //     "}").c_str());
+    // print("COLLECTED A? : ");
+    // print((collectedA ? "YES" : "NO"));
+    // print("COLLECTED B? : ");
+    // print((collectedB ? "YES" : "NO"));
+
+    /*
+    do something silly now
+    run the maze algorithm until we have the A flag
+    */
+    if (!collectedA) {
+        move = runStageMaze();
+    } else if (!collectedB) {
+        move = runStageMaze();
+
+        auto Bwalls = getCardinals(1, 'B');
+        for (int w : Bwalls) {
+            print(("Wall at: " + translate(w)).c_str());
+        }
+        if (!Bwalls.empty()) {
+            move = Bwalls.front();
+        }
+    } else {
+        move = moveTowards(doorPos);
+    }
+
+    if (!collectedA && flagAPos.first != -1 && flagAPos.second != -1) {
+        if (playerPos.first == flagAPos.first && playerPos.second == flagAPos.second) {
+            collectedA = true;
+        }
+    }
+    if (collectedA && !collectedB && flagBPos.first != -1 && flagBPos.second != -1) {
+        if (playerPos.first == flagBPos.first && playerPos.second == flagBPos.second) {
+            collectedB = true;
+        }
+    }
+
+    print("Chosen Move:");
+    print(translate(move).c_str());
+
+    // printVision();
+    return move;
+}
+
+int Brain::runStageEnemies() {
+    print("----------------");
+    print("STAGE: ENEMIES");
+
+    print("last player pos:");
+    print(("{" + std::to_string(lastPlayerPos.first) + "," + std::to_string(lastPlayerPos.second) +
+           "}")
+              .c_str());
+    print("current player pos:");
+    print(("{" + std::to_string(playerPos.first) + "," + std::to_string(playerPos.second) + "}")
+              .c_str());
+
+    printVision();
+
+    int move = STAY;
+
+    static std::set<POS> lastEnemiesPos {};
+    std::set<POS> enemyMemory {};
+
+    // int1: COLUMN int2: DIRECTION
+    std::map<int, int> enemyDirections {};
+    // int1: COLUMN int2: DISTANCE
+    std::map<int, int> enemyDistances {};
+
+    /*
+    remember any enemies we start to see
+    */
+    for (POS e : getRelativeAllInVision('X')) {
+        POS enemy;
+        enemy = relToAbs(e);
+        if (std::find(enemyMemory.begin(), enemyMemory.end(), enemy) == enemyMemory.end()) {
+            int dist =
+                std::abs(enemy.first - playerPos.first) + std::abs(enemy.second - playerPos.second);
+            enemyMemory.insert(enemy);
+            enemyDirections[enemy.first] = 0;
+            enemyDistances[enemy.first] = 0;
+        }
+    }
+
+    if (!lastEnemiesPos.empty() && !enemyMemory.empty()) {
+        auto itLast = lastEnemiesPos.begin();
+        auto itNow = enemyMemory.begin();
+        for (size_t i = 0; i < lastEnemiesPos.size(); i++, ++itLast, ++itNow) {
+            int diff = itLast->first - itNow->first;
+            if (diff < 0) {
+                enemyDirections[itLast->first] = DOWN;
+            } else {
+                enemyDirections[itLast->first] = UP;
+            }
+        }
+    }
+
+    if (!enemyMemory.empty()) {
+        move = RIGHT;
+
+        auto distIt = enemyDistances.begin();
+        auto enemIt = enemyMemory.begin();
+        auto dirIt = enemyDirections.begin();
+
+        for (int i = 0; i < enemyMemory.size(); i++, ++distIt, ++enemIt, ++dirIt) {
+            int dist = std::abs(enemIt->first - playerPos.first) +
+
+                       std::abs(enemIt->second - playerPos.second);
+            distIt->second = dist;
+            print(("Enemy at: {" + std::to_string(enemIt->first) + "," +
+                   std::to_string(enemIt->second) + "} Direction: " + translate(dirIt->second) +
+                   " Distance: " + std::to_string(dist))
+                      .c_str());
+        }
+    }
+
+    // this isnt needed since we arent static enemymemory
+    // if (!enemyMemory.empty()) {
+    //     for (POS emptySpace : relToAbs(getRelativeAllInVision(' '))) {
+    //         enemyMemory.erase(emptySpace);
+    //     }
+    //     enemyMemory.erase(playerPos); // Remove enemy at current position
+    // }
+    lastEnemiesPos = enemyMemory;
+
+#ifdef LOG_TO_FILE
+    std::this_thread::sleep_for(std::chrono::milliseconds(1280));
+#endif
     return move;
 }

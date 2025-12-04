@@ -44,10 +44,12 @@ class Brain {
         int moveTowards(POS target, int limit = -1);
 
         std::vector<int> getCardinals(int r, char targ);
+        std::vector<int> getCardinals(int r, const std::vector<char>& targ);
 
         int runStageMaze();
         int runStageFood();
         int runStageFlags();
+        int runStageEnemies();
 
     private:
         GameState* gamestate_;

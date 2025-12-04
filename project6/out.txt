@@ -1,8 +1,11 @@
-STAGE: ONE
-Wall at: DOWN
+----------------
+STAGE: ENEMIES
 last player pos:
-{23,2}
+{36,5}
 current player pos:
-{24,2}
-Chosen Move:
-RIGHT
+{36,5}
+       
+       
+ >     
+       
+       
