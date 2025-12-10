@@ -46,7 +46,7 @@ class Brain {
         std::vector<int> getCardinals(int r, char targ);
         std::vector<int> getCardinals(int r, const std::vector<char>& targ);
 
-        int runStageMaze();
+        int runStageMaze(bool traps = false);
         int runStageFood();
         int runStageFlags();
         int runStageEnemies();

@@ -1,11 +1,9 @@
 ----------------
-STAGE: ENEMIES
+STAGE: MAZE
+Wall at: LEFT
 last player pos:
-{36,5}
+{55,4}
 current player pos:
-{36,5}
-       
-       
- >     
-       
-       
+{55,3}
+Chosen Move:
+RIGHT

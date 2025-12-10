@@ -7,7 +7,7 @@
 #include <thread>
 #include <vector>
 
-#define LOG_TO_FILE
+// #define LOG_TO_FILE
 
 Brain::Brain() {}
 
@@ -24,13 +24,23 @@ int Brain::getNextMove(GameState& gamestate) {
     playerPos.first = gamestate.pos[1];
     playerPos.second = gamestate.pos[0];
 
+    static int lastStage = gamestate.stage;
+
     clearFile();
     switch (gamestate.stage) {
         case 0:
         case 2:
-        case 5:
-            nextMove = runStageMaze();
+        case 5: {
+            bool traps = false;
+            if (lastStage != gamestate.stage && gamestate.stage == 5) {
+                nextMove = RIGHT;
+                break;
+            } else if (gamestate.stage == 5) {
+                traps = true;
+            }
+            nextMove = runStageMaze(traps);
             break;
+        }
         case 1:
             nextMove = runStageFood();
             break;
@@ -44,6 +54,7 @@ int Brain::getNextMove(GameState& gamestate) {
 
     lastPlayerPos.first = gamestate.pos[1];
     lastPlayerPos.second = gamestate.pos[0];
+    lastStage = gamestate.stage;
 
     return move(nextMove);
 }
@@ -76,22 +87,22 @@ POS Brain::simulate(int direction, POS startPos) {
 
     switch (direction) {
         case UP:
-            if (simPos.first - 1 > 1) {
-                simPos.first -= 1;
-            }
-            break;
-        case DOWN:
-            simPos.first += 1;
-            break;
-        case LEFT:
             if (simPos.second - 1 > 1) {
                 simPos.second -= 1;
             }
             break;
-            simPos.second -= 1;
+        case DOWN:
+            simPos.second += 1;
+            break;
+        case LEFT:
+            if (simPos.first - 1 > 1) {
+                simPos.first -= 1;
+            }
+            break;
+            simPos.first -= 1;
             break;
         case RIGHT:
-            simPos.second += 1;
+            simPos.first += 1;
             break;
     }
 
@@ -423,9 +434,10 @@ std::vector<int> Brain::getCardinals(int r, const std::vector<char>& targ) {
     return outs;
 }
 
-int Brain::runStageMaze() {
+int Brain::runStageMaze(bool traps) {
     /*
-    this is a wall hugger
+    this is a wall hugger, but versitile enoug hwehre it works
+    pretty well for more than just the first one
     */
 
     print("----------------");
@@ -469,8 +481,54 @@ int Brain::runStageMaze() {
 
         if (playerPos == lastPlayerPos) {
             move = RIGHT;
+
+            if (traps) {
+                // turn left
+                switch (walls.front()) {
+                    case UP:
+                        move = LEFT;
+                        break;
+                    case DOWN:
+                        move = RIGHT;
+                        break;
+                    case LEFT:
+                        move = DOWN;
+                        break;
+                    case RIGHT:
+                        move = UP;
+                        break;
+                }
+            }
         } else {
-            move = lastMove;
+            // special for traps
+            auto wins = getCardinals(1, 'w');
+            if (!wins.empty()) {
+                move = wins.front();
+            } else {
+                if (auto walls2 = getCardinals(1, 'T');
+                    traps && !walls2.empty() &&
+                    move == walls2.front()) { // if wall is in the direction we came from
+                    // turn right
+                    switch (walls.front()) {
+                        case UP:
+                            move = RIGHT;
+                            break;
+                        case DOWN:
+                            move = LEFT;
+                            break;
+                        case LEFT:
+                            move = UP;
+                            break;
+                        case RIGHT:
+                            move = DOWN;
+                            break;
+                    }
+                } else {
+                    // keep going forward
+
+                    move = lastMove;
+                }
+            }
         }
     } else if (walls.size() == 2) {
         // turn to the direction without a wall and hat we werent coming from
@@ -501,6 +559,11 @@ int Brain::runStageMaze() {
 }
 
 int Brain::runStageFood() {
+    /*
+    premise: look for foods in vision
+    then go to closet one and repeat until memory is empty
+    find door
+    */
     print("----------------");
     print("STAGE: FOOD");
 
@@ -577,6 +640,11 @@ int Brain::runStageFood() {
 }
 
 int Brain::runStageFlags() {
+    /*
+    this one is quirky
+    it uses runStageMaze to get around,
+    but remembers where the flag positions are
+    */
     print("----------------");
     print("STAGE: FLAGS");
 
@@ -688,6 +756,12 @@ int Brain::runStageFlags() {
 }
 
 int Brain::runStageEnemies() {
+    /*
+    this one is silly but move right most of the time
+    door position is hardcoded, but we can see enemies and avoid them
+    on the fly, so no movements are hardcoded except for the general rightward trend
+    */
+
     print("----------------");
     print("STAGE: ENEMIES");
 
@@ -704,7 +778,10 @@ int Brain::runStageEnemies() {
     int move = STAY;
 
     static std::set<POS> lastEnemiesPos {};
+    static std::map<int, int> lastEnemyRowsByColumn {};
+    static const POS doorPos {43, 2};
     std::set<POS> enemyMemory {};
+    std::map<int, POS> enemiesByColumn {};
 
     // int1: COLUMN int2: DIRECTION
     std::map<int, int> enemyDirections {};
@@ -712,63 +789,95 @@ int Brain::runStageEnemies() {
     std::map<int, int> enemyDistances {};
 
     /*
-    remember any enemies we start to see
+    remember any enemies we start to see and map them by column
     */
     for (POS e : getRelativeAllInVision('X')) {
-        POS enemy;
-        enemy = relToAbs(e);
-        if (std::find(enemyMemory.begin(), enemyMemory.end(), enemy) == enemyMemory.end()) {
-            int dist =
-                std::abs(enemy.first - playerPos.first) + std::abs(enemy.second - playerPos.second);
-            enemyMemory.insert(enemy);
-            enemyDirections[enemy.first] = 0;
-            enemyDistances[enemy.first] = 0;
-        }
-    }
+        POS enemy = relToAbs(e);
+        enemyMemory.insert(enemy);
+        enemiesByColumn[enemy.first] = enemy;
 
-    if (!lastEnemiesPos.empty() && !enemyMemory.empty()) {
-        auto itLast = lastEnemiesPos.begin();
-        auto itNow = enemyMemory.begin();
-        for (size_t i = 0; i < lastEnemiesPos.size(); i++, ++itLast, ++itNow) {
-            int diff = itLast->first - itNow->first;
-            if (diff < 0) {
-                enemyDirections[itLast->first] = DOWN;
+        auto prevRow = lastEnemyRowsByColumn.find(enemy.first);
+        if (prevRow != lastEnemyRowsByColumn.end()) {
+            if (enemy.second < prevRow->second) {
+                enemyDirections[enemy.first] = UP;
+            } else if (enemy.second > prevRow->second) {
+                enemyDirections[enemy.first] = DOWN;
             } else {
-                enemyDirections[itLast->first] = UP;
+                enemyDirections[enemy.first] = STAY;
             }
+        } else {
+            enemyDirections[enemy.first] = STAY;
         }
+
+        lastEnemyRowsByColumn[enemy.first] = enemy.second;
     }
 
-    if (!enemyMemory.empty()) {
-        move = RIGHT;
+    if (!enemiesByColumn.empty()) {
+        for (const auto& [column, enemyPos] : enemiesByColumn) {
+            int dist = std::abs(enemyPos.first - playerPos.first) +
+                       std::abs(enemyPos.second - playerPos.second);
+            enemyDistances[column] = dist;
 
-        auto distIt = enemyDistances.begin();
-        auto enemIt = enemyMemory.begin();
-        auto dirIt = enemyDirections.begin();
+            int direction = STAY;
+            auto dirIt = enemyDirections.find(column);
+            if (dirIt != enemyDirections.end()) {
+                direction = dirIt->second;
+            }
 
-        for (int i = 0; i < enemyMemory.size(); i++, ++distIt, ++enemIt, ++dirIt) {
-            int dist = std::abs(enemIt->first - playerPos.first) +
-
-                       std::abs(enemIt->second - playerPos.second);
-            distIt->second = dist;
-            print(("Enemy at: {" + std::to_string(enemIt->first) + "," +
-                   std::to_string(enemIt->second) + "} Direction: " + translate(dirIt->second) +
+            print(("Enemy at: {" + std::to_string(enemyPos.first) + "," +
+                   std::to_string(enemyPos.second) + "} Direction: " + translate(direction) +
                    " Distance: " + std::to_string(dist))
                       .c_str());
         }
     }
 
-    // this isnt needed since we arent static enemymemory
-    // if (!enemyMemory.empty()) {
-    //     for (POS emptySpace : relToAbs(getRelativeAllInVision(' '))) {
-    //         enemyMemory.erase(emptySpace);
-    //     }
-    //     enemyMemory.erase(playerPos); // Remove enemy at current position
-    // }
+    if (std::abs(doorPos.first - playerPos.first) <= 1) {
+        move = moveTowards(doorPos);
+        print("Near door, moving towards it.");
+    } else {
+        move = RIGHT;
+        if (!enemyMemory.empty()) {
+            // if the space next to us has an enemy or will have an enemy, move away
+            bool enemyAhead = false;
+            POS aheadPos = simulate(RIGHT, playerPos);
+            print(("ahead pos " + std::to_string(aheadPos.first) + "," +
+                   std::to_string(aheadPos.second))
+                      .c_str());
+            for (const POS& enemyPos : enemyMemory) {
+                if (enemyPos == aheadPos) {
+                    enemyAhead = true;
+                    break;
+                }
+                // also check if enemy is moving into that space
+                int colDir = enemyDirections.find(enemyPos.first) != enemyDirections.end()
+                                 ? enemyDirections[enemyPos.first]
+                                 : STAY;
+                POS enemyNextPos = simulate(colDir, enemyPos);
+                if (enemyNextPos == aheadPos) {
+                    enemyAhead = true;
+                    break;
+                }
+            }
+
+            if (!enemyAhead) {
+                move = RIGHT;
+            } else {
+                int colDir = enemyDirections.find(playerPos.first) != enemyDirections.end()
+                                 ? enemyDirections[playerPos.first]
+                                 : STAY;
+
+                move = colDir;
+            }
+        }
+    }
+
     lastEnemiesPos = enemyMemory;
 
-#ifdef LOG_TO_FILE
-    std::this_thread::sleep_for(std::chrono::milliseconds(1280));
-#endif
+    print("Chosen Move:");
+    print(translate(move).c_str());
+
+    // #ifdef LOG_TO_FILE
+    //     std::this_thread::sleep_for(std::chrono::milliseconds(280));
+    // #endif
     return move;
 }
